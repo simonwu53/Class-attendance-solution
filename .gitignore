@@ -1,5 +1,7 @@
 # Shan's
 .DS_Store
+dump.py
+src/
 
 
 # Byte-compiled / optimized / DLL files
