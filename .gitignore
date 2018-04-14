@@ -1,7 +1,9 @@
 # Shan's
 .DS_Store
 dump.py
-src/
+train/
+test/
+dump/
 
 
 # Byte-compiled / optimized / DLL files

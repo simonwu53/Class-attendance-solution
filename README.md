@@ -25,3 +25,10 @@ src/
         ...
     ...
 '''
+* 'src2/' has the same structure, but all pics are cropped to show only faces.
+
+### RUN
+* put pics of persons in src/ by instructions above.
+* run 'crop_faces.py' to create dataset only contains faces(faces in src2/).
+* run 'build_dataset.py' to prepare database for recognition.
+* run 'main.py' to play.

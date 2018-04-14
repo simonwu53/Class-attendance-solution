@@ -1,68 +1,60 @@
-"""
-citation: ageitgey from face_recognition.
-link: https://github.com/ageitgey/face_recognition
-"""
-import face_recognition
+# import
+from funs_face import train, predict, show_prediction_labels_on_image
+import os
 import cv2
 
 
-class recognize_face:
-    def __init__(self, known_face_encodings, known_face_names):
-        self.face_locations = []
-        self.face_encodings = []
-        self.face_names = []
-        self.process_this_frame = True
-        self.known_face_encodings = known_face_encodings
-        self.known_face_names = known_face_names
+# face_recognition
+class FR:
+    def __init__(self, train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree', verbose=False):
+        self.verbose = verbose
+        self.train_dir = train_dir
+        self.model_save_path = model_save_path
+        self.n_neighbors = n_neighbors
+        self.knn_algo = knn_algo
 
-    def run(self):
+    def train(self):
+        print("Training KNN classifier...")
+        classifier = train(self.train_dir, model_save_path=self.model_save_path, n_neighbors=self.n_neighbors,
+                           verbose=self.verbose)
+        print("Training complete!")
+
+    def predict(self, frame):
+
+        # Find all people in the image using a trained classifier model
+        # Note: You can pass in either a classifier file name or a classifier model instance
+        predictions = predict(frame, model_path="trained_knn_model.clf")
+
+        # Print results on the console
+        if self.verbose:
+            for name, (top, right, bottom, left) in predictions:
+                print("- Found {} at ({}, {})".format(name, left, top))
+
+        # Display results overlaid on an image
+        # show_prediction_labels_on_image(os.path.join(test_path, image_file), predictions)
+        return predictions
+
+    def draw(self, frame, predictions):
+        for name, (top, right, bottom, left) in predictions:
+            cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
+            cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
+            font = cv2.FONT_HERSHEY_DUPLEX
+            cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+        return frame
+
+    def start_recognition(self):
+        predictitons = None
+        process = True
         video_capture = cv2.VideoCapture(0)
         while True:
             # Grab a single frame of video
             ret, frame = video_capture.read()
 
-            # Resize frame of video to 1/4 size for faster face recognition processing
-            small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
-
-            # Convert the image from BGR color (which OpenCV uses) to RGB color (which face_recognition uses)
-            rgb_small_frame = small_frame[:, :, ::-1]
-
-            # Only process every other frame of video to save time
-            if self.process_this_frame:
-                # Find all the faces and face encodings in the current frame of video
-                self.face_locations = face_recognition.face_locations(rgb_small_frame)
-                self.face_encodings = face_recognition.face_encodings(rgb_small_frame, self.face_locations)
-
-                self.face_names = []
-                for face_encoding in self.face_encodings:
-                    # See if the face is a match for the known face(s)
-                    matches = face_recognition.compare_faces(self.known_face_encodings, face_encoding)
-                    name = "Unknown"
-
-                    # If a match was found in known_face_encodings, just use the first one.
-                    if True in matches:
-                        first_match_index = matches.index(True)
-                        name = self.known_face_names[first_match_index]
-
-                    self.face_names.append(name)
-
-            self.process_this_frame = not self.process_this_frame
-
-            # Display the results
-            for (top, right, bottom, left), name in zip(self.face_locations, self.face_names):
-                # Scale back up face locations since the frame we detected in was scaled to 1/4 size
-                top *= 2
-                right *= 2
-                bottom *= 2
-                left *= 2
-
-                # Draw a box around the face
-                cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
-
-                # Draw a label with a name below the face
-                cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
-                font = cv2.FONT_HERSHEY_DUPLEX
-                cv2.putText(frame, name, (left + 6, bottom - 6), font, 1.0, (255, 255, 255), 1)
+            # predict the frame
+            if process:
+                predictitons = self.predict(frame)
+            if predictitons:
+                frame = self.draw(frame, predictitons)
 
             # Display the resulting image
             cv2.imshow('Video', frame)
@@ -71,6 +63,14 @@ class recognize_face:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 break
 
+            process = not process
+
         # Release handle to the webcam
         video_capture.release()
         cv2.destroyAllWindows()
+
+
+if __name__ == '__main__':
+    f = FR("/Users/simonwu/PycharmProjects/PR/Class-attendance-solution/src", model_save_path="trained_knn_model.clf",
+           n_neighbors=3, verbose=False)
+    f.start_recognition()
