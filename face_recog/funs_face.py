@@ -80,7 +80,7 @@ def train(train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree
     return knn_clf
 
 
-def predict(X_img, knn_clf=None, model_path=None, distance_threshold=0.6):
+def predict(X_img, knn_clf=None, model_path=None, distance_threshold=0.5):
     """
     Recognizes faces in given image using a trained KNN classifier
 
@@ -154,26 +154,46 @@ def show_prediction_labels_on_image(img_path, predictions):
     pil_image.show()
 
 
+"""
+new functions added below
+"""
+def register_faces(faces, name, save_path='/Users/simonwu/PycharmProjects/PR/Class-attendance-solution/train'):
+    order = 0
+    for face in faces:
+        # detect face in frame
+        face_locations = face_recognition.face_locations(face)
+        # If no faces are found in the image, return -1.
+        if len(face_locations) == 0:
+            continue
+        # save pic
+        path = os.path.join(os.path.join(save_path, name), str(order)+'.jpg')
+        cv2.imwrite(path, face)
+        order += 1
+    return order
+
+
 if __name__ == "__main__":
-    # STEP 1: Train the KNN classifier and save it to disk
-    # Once the model is trained and saved, you can skip this step next time.
-    print("Training KNN classifier...")
-    classifier = train("knn_examples/train", model_save_path="trained_knn_model.clf", n_neighbors=2)
-    print("Training complete!")
+    # # STEP 1: Train the KNN classifier and save it to disk
+    # # Once the model is trained and saved, you can skip this step next time.
+    # print("Training KNN classifier...")
+    # classifier = train("knn_examples/train", model_save_path="trained_knn_model.clf", n_neighbors=2)
+    # print("Training complete!")
+    #
+    # # STEP 2: Using the trained classifier, make predictions for unknown images
+    # for image_file in os.listdir("knn_examples/test"):
+    #     full_file_path = os.path.join("knn_examples/test", image_file)
+    #
+    #     print("Looking for faces in {}".format(image_file))
+    #
+    #     # Find all people in the image using a trained classifier model
+    #     # Note: You can pass in either a classifier file name or a classifier model instance
+    #     predictions = predict(full_file_path, model_path="trained_knn_model.clf")
+    #
+    #     # Print results on the console
+    #     for name, (top, right, bottom, left) in predictions:
+    #         print("- Found {} at ({}, {})".format(name, left, top))
+    #
+    #     # Display results overlaid on an image
+    #     show_prediction_labels_on_image(os.path.join("knn_examples/test", image_file), predictions)
 
-    # STEP 2: Using the trained classifier, make predictions for unknown images
-    for image_file in os.listdir("knn_examples/test"):
-        full_file_path = os.path.join("knn_examples/test", image_file)
-
-        print("Looking for faces in {}".format(image_file))
-
-        # Find all people in the image using a trained classifier model
-        # Note: You can pass in either a classifier file name or a classifier model instance
-        predictions = predict(full_file_path, model_path="trained_knn_model.clf")
-
-        # Print results on the console
-        for name, (top, right, bottom, left) in predictions:
-            print("- Found {} at ({}, {})".format(name, left, top))
-
-        # Display results overlaid on an image
-        show_prediction_labels_on_image(os.path.join("knn_examples/test", image_file), predictions)
+    pass

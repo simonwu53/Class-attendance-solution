@@ -2,7 +2,7 @@
 14.04.2018 version 2
 """
 # import
-from funs_face import train, predict, show_prediction_labels_on_image
+from funs_face import train, predict, register_faces
 import os
 import cv2
 
@@ -77,8 +77,49 @@ class FR:
         video_capture.release()
         cv2.destroyAllWindows()
 
+    def register_face(self):
+        faces = []
+        save_path = self.train_dir
+        count = 0
+        name = input('Please input your name:')
+        if self.verbose:
+            print('Your name is: %s' % name)
+        os.makedirs(os.path.join(save_path, name))
+
+        video_capture = cv2.VideoCapture(0)  # fps:29
+        while True:
+            # Grab a single frame of video
+            ret, frame = video_capture.read()
+
+            # save pics
+            if count % 8 == 0:
+                faces.append(frame)
+
+            # Display the resulting image
+            cv2.imshow('Video', frame)
+
+            # Hit 'q' on the keyboard or after 3 seconds to quit!
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+            if count == 87:
+                break
+
+            count += 1
+
+        # Release handle to the webcam
+        video_capture.release()
+        cv2.destroyAllWindows()
+        status = register_faces(faces, name)
+        if self.verbose:
+            print('Face registered. Faces captured: %d. Faces registered: %d' % (len(faces), status))
+            print('Updating model.')
+        # retrain model
+        self.train()
+
 
 if __name__ == '__main__':
-    f = FR("/Users/simonwu/PycharmProjects/PR/Class-attendance-solution/src", model_save_path="trained_knn_model.clf",
+    f = FR("/Users/simonwu/PycharmProjects/PR/Class-attendance-solution/train", model_save_path="trained_knn_model.clf",
            n_neighbors=3, verbose=False)
     f.start_recognition()
+    # f.register_face()
+    # f.train()
