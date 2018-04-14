@@ -1,3 +1,6 @@
+"""
+14.04.2018 version 2
+"""
 # import
 from funs_face import train, predict, show_prediction_labels_on_image
 import os
@@ -36,6 +39,10 @@ class FR:
 
     def draw(self, frame, predictions):
         for name, (top, right, bottom, left) in predictions:
+            top *= 2
+            right *= 2
+            bottom *= 2
+            left *= 2
             cv2.rectangle(frame, (left, top), (right, bottom), (0, 0, 255), 2)
             cv2.rectangle(frame, (left, bottom - 35), (right, bottom), (0, 0, 255), cv2.FILLED)
             font = cv2.FONT_HERSHEY_DUPLEX
@@ -49,10 +56,11 @@ class FR:
         while True:
             # Grab a single frame of video
             ret, frame = video_capture.read()
-
+            # shrink the size of frame to speed up processing
+            small_frame = cv2.resize(frame, (0, 0), fx=0.5, fy=0.5)
             # predict the frame
             if process:
-                predictitons = self.predict(frame)
+                predictitons = self.predict(small_frame)
             if predictitons:
                 frame = self.draw(frame, predictitons)
 

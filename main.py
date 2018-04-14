@@ -1,3 +1,6 @@
+"""
+14.04.2018 version 2
+"""
 # import
 import os
 import face_recognition

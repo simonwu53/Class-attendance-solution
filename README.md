@@ -12,11 +12,11 @@ Course project for pattern recognition. An attendance application for class.
 * OpenCV
 
 ##### datasets
-* all face pics stored in 'src/' folder
-* in 'src/' folder organize all faces by person, each person has a folder named by 'his name'
+* all face pics stored in 'train/' folder
+* in 'train/' folder organize all faces by person, each person has a folder named by 'his name'
 * structure like this:
 '''
-src/
+train/
     person1/
         0.jpg
         1.jpg
@@ -25,10 +25,6 @@ src/
         ...
     ...
 '''
-* 'src2/' has the same structure, but all pics are cropped to show only faces.
 
 ### RUN
-* put pics of persons in src/ by instructions above.
-* run 'crop_faces.py' to create dataset only contains faces(faces in src2/).
-* run 'build_dataset.py' to prepare database for recognition.
-* run 'main.py' to play.
+* (testing) run 'class_face.py' in 'face_recog' folder.
