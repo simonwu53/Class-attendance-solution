@@ -11,11 +11,14 @@ Course project for pattern recognition. An attendance application for class.
 * face_recognition(pip)
 * OpenCV
 
+##### speech_recognition
+* to be determined
+
 ##### datasets
 * all face pics stored in 'train/' folder
 * in 'train/' folder organize all faces by person, each person has a folder named by 'his name'
 * structure like this:
-'''
+```
 train/
     person1/
         0.jpg
@@ -24,7 +27,8 @@ train/
     person2/
         ...
     ...
-'''
+```
 
 ### RUN
 * (testing) run 'class_face.py' in 'face_recog' folder.
+* (testing) run 'ui.py' in 'gui' folder.
