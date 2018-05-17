@@ -13,6 +13,7 @@ Course project for pattern recognition. An attendance application for class.
 
 ##### speech_recognition
 * to be determined
+* Pyaudio
 
 ##### datasets
 * all face pics stored in 'train/' folder

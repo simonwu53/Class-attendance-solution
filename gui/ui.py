@@ -29,6 +29,7 @@ class ClassAttendanceUI:
         self.faces = []
         self.count = 0
         self.checkedFaces = []
+        self.records = []
 
         # ui
         self.root = Tk()
@@ -184,6 +185,7 @@ class ClassAttendanceUI:
         return
 
     def checkNameList(self):
+        # use self.records
         return
 
     def on_start(self):
