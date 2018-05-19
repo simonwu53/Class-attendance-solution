@@ -107,3 +107,9 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+\.idea/
+
+face_recog/trained_knn_model\.clf
+
+*.txt

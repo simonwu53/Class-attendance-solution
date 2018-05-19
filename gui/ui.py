@@ -1,8 +1,8 @@
 import sys
-
 sys.path.append('../../Class-attendance-solution')
 from tkinter import *
 from tkinter import messagebox
+from tkinter import ttk
 import cv2
 from PIL import Image
 from PIL import ImageTk
@@ -13,22 +13,19 @@ from face_recog.class_face import FR
 from face_recog.funs_face import register_faces
 from src.namelist import NAMELIST
 
-"""
-TODO: line 93
-"""
-
 
 class ClassAttendanceUI:
-    def __init__(self, face_detection_module, vs):
+    def __init__(self, face_detection_module, voice_detection_module, vs):
         # variables
         self.faceDetect = face_detection_module
-        self.src = '/Users/simonwu/PycharmProjects/PR/Class-attendance-solution/src'
-        self.trainPath = '/Users/simonwu/PycharmProjects/PR/Class-attendance-solution/train'
+        self.voiceDetect = voice_detection_module
+        self.src = '../../Class-attendance-solution/src'
+        self.trainPath = '../../Class-attendance-solution/train'
         self.frame = None
         self.video_stream = vs
         self.faces = []
         self.count = 0
-        self.checkedFaces = []
+        self.checkedFaces = {}
         self.records = []
 
         # ui
@@ -45,13 +42,16 @@ class ClassAttendanceUI:
         self.name_panel = None
         self.name = None
 
+        self.check_panel = None
+        self.tree = None
+
         # threading loop
         self.isStreaming = None
 
         # load trained mdoel
         if os.path.isfile('../../Class-attendance-solution/face_recog/trained_knn_model.clf'):
             self.faceDetect.open_knnclf()
-            self.mode = 1  # 1-detection 0-registration 3-just video
+            self.mode = 1  # 1-detection 0-registration 3-no trained data 2-idle mode
         else:
             # get in mode 3
             self.mode = 3
@@ -78,6 +78,7 @@ class ClassAttendanceUI:
             return
 
     def start_registration(self):
+        self.mode = 2
         # init variable
         self.count = 0
         self.name = None
@@ -90,6 +91,7 @@ class ClassAttendanceUI:
         name_label.grid(row=0, column=0, sticky=NSEW, padx=230)
         self.name_entry = Entry(self.name_panel)
         self.name_entry.grid(row=1, column=0, sticky=NSEW, padx=230)
+        self.name_entry.focus()
         submit_button = Button(self.name_panel, text='Submit', command=self.regist_name)
         submit_button.grid(row=2, column=0, sticky=NSEW, padx=230)
         return
@@ -104,12 +106,16 @@ class ClassAttendanceUI:
             # check mode
             if self.mode == 1:
                 predictitons = self.faceDetect.predict(small_frame)
-                self.name = predictitons[0][0]  # get name from predictions
+                try:
+                    self.name = predictitons[0][0]  # get name from predictions
+                except IndexError as e:
+                    print('No face detected!')
+                    self.isStreaming = self.root.after(25, self.video_loop)
+                    return
                 image = self.faceDetect.draw(self.frame, predictitons, recover=True)
                 image = cv2.resize(image, (0, 0), fx=0.5, fy=0.5)
                 # register attendance in background ********
-                if self.name not in self.checkedFaces:
-                    self.checkedFaces.append(self.name)
+                if self.name not in self.checkedFaces and self.name != 'unknown':
                     t = threading.Thread(target=self.logAttendance)
                     t.start()
             elif self.mode == 0:
@@ -117,8 +123,8 @@ class ClassAttendanceUI:
                     print('face captured!')
                     self.faces.append(self.frame)
                 # if len of faces get enough, train model
-                if len(self.faces) == 20:
-                    self.mode = 3  # turn to idle mode
+                if len(self.faces) == 12:
+                    self.mode = 2  # turn to idle mode
                     t = threading.Thread(target=self.trainModel)
                     t.start()
                 image = small_frame
@@ -157,10 +163,10 @@ class ClassAttendanceUI:
         else:
             # make dir for training
             p = os.path.join(self.trainPath, self.name)
-            os.makedirs(p)
+            if not os.path.exists(p):
+                os.makedirs(p)
             # add name to NAMELIST
             NAMELIST.append(self.name)
-            self.checkedFaces.append(self.name)
             # close window
             self.name_panel.destroy()
             # show message box
@@ -185,7 +191,28 @@ class ClassAttendanceUI:
         return
 
     def checkNameList(self):
-        # use self.records
+        # check list panel
+        self.check_panel = Toplevel(self.root)
+        self.tree = ttk.Treeview(self.check_panel, columns=['Checked-in Time'])
+        self.tree.heading('#0', text='Name')
+        self.tree.heading('#1', text='Checked-in Time')
+        self.tree.column('#0', width=100, stretch=YES)
+        self.tree.column('#1', stretch=YES)
+        self.tree.grid(row=0, column=0, sticky=NSEW)
+        refresh_button = Button(self.check_panel, text='Refresh', command=self.refreshTreeView)
+        refresh_button.grid(row=1, column=0, sticky=EW)
+        # insert data
+        self.refreshTreeView()
+        return
+
+    def refreshTreeView(self):
+        # remove old data
+        if self.tree:
+            for i in self.tree.get_children():
+                self.tree.delete(i)
+        # insert data
+        for person in self.checkedFaces:
+            self.tree.insert('', 'end', text=person, values=(self.checkedFaces[person]))
         return
 
     def on_start(self):
@@ -210,6 +237,8 @@ class ClassAttendanceUI:
         now = time.strftime("%d-%m-%Y,%H:%M:%S")
         s = now + '\t' + self.name + '\n'
         self.logWriter.write(s)
+        # record for display
+        self.checkedFaces[self.name] = time.strftime("%d-%m-%Y,%H:%M:%S")
         # reset variable
         self.name = None
         return
@@ -228,14 +257,15 @@ class ClassAttendanceUI:
 
 if __name__ == '__main__':
     # create face detection app
-    face = FR("/Users/simonwu/PycharmProjects/PR/Class-attendance-solution/train",
-              model_save_path="/Users/simonwu/PycharmProjects/PR/Class-attendance-solution/face_recog/trained_knn_model.clf",
+    face = FR("../../Class-attendance-solution/train",
+              model_save_path="../../Class-attendance-solution/face_recog/trained_knn_model.clf",
               n_neighbors=3, verbose=False)
     # create voice detection app
+    voice = None
     # create camera stream
     print("[INFO] warming up camera...")
     videoStream = cv2.VideoCapture(0)
     time.sleep(1)
     # start main app
-    app = ClassAttendanceUI(face, videoStream)
+    app = ClassAttendanceUI(face, voice, videoStream)
     app.on_start()

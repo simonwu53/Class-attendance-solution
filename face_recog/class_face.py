@@ -137,7 +137,7 @@ class FR:
 
 
 if __name__ == '__main__':
-    f = FR("/Users/simonwu/PycharmProjects/PR/Class-attendance-solution/train", model_save_path="trained_knn_model.clf",
+    f = FR("../../Class-attendance-solution/train", model_save_path="trained_knn_model.clf",
            n_neighbors=3, verbose=False)
     f.open_knnclf()
     f.start_recognition()

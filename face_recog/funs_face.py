@@ -157,7 +157,7 @@ def show_prediction_labels_on_image(img_path, predictions):
 """
 new functions added below
 """
-def register_faces(faces, name, save_path='/Users/simonwu/PycharmProjects/PR/Class-attendance-solution/train'):
+def register_faces(faces, name, save_path='../../Class-attendance-solution/train'):
     order = 0
     for face in faces:
         # detect face in frame
