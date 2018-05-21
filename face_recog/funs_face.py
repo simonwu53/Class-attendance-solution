@@ -80,7 +80,7 @@ def train(train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree
     return knn_clf
 
 
-def predict(X_img, knn_clf=None, model_path=None, distance_threshold=0.5):
+def predict(X_img, knn_clf=None, model_path=None, distance_threshold=0.6):
     """
     Recognizes faces in given image using a trained KNN classifier
 

@@ -189,7 +189,7 @@ class ClassAttendanceUI:
 
     def trainModel(self):
         # store images
-        status = register_faces(self.faces, self.name)
+        status = register_faces(self.faces, self.name, save_path=self.trainPath)
         print('Face registered. Faces captured: %d. Faces registered: %d' % (len(self.faces), status))
         # update train model
         messagebox.showinfo("Processing", "Training model... Please wait...")
