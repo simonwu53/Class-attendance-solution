@@ -3,8 +3,8 @@
 """
 # import
 import sys
-sys.path.append('../../Class-attendance-solution/face_recog')
-from funs_face import train, predict, register_faces
+sys.path.append('../../Class-attendance-solution/')
+from face_recog.funs_face import train, predict, register_faces
 import os
 import cv2
 import pickle
@@ -12,19 +12,19 @@ import pickle
 
 # face_recognition
 class FR:
-    def __init__(self, train_dir, model_save_path=None, n_neighbors=None, knn_algo='ball_tree', verbose=False):
+    def __init__(self, module_path, n_neighbors=None, knn_algo='ball_tree', verbose=False):
         self.verbose = verbose
-        self.train_dir = train_dir
-        self.model_save_path = model_save_path
+        self.modulePath = module_path
+        self.train_dir = os.path.join(self.modulePath, 'train')
+        self.model_save_path = os.path.join(self.modulePath, 'face_recog/trained_knn_model.clf')
         self.n_neighbors = n_neighbors
         self.knn_algo = knn_algo
         self.knn_clf = None
-        self.modelPath = '../../Class-attendance-solution/face_recog/trained_knn_model.clf'
 
     def open_knnclf(self):
         self.knn_clf = None
-        if os.path.isfile(self.modelPath):
-            with open(self.modelPath, 'rb') as f:
+        if os.path.isfile(self.model_save_path):
+            with open(self.model_save_path, 'rb') as f:
                 self.knn_clf = pickle.load(f)
         else:
             print('You should register one face first then start recognition!')
@@ -137,7 +137,7 @@ class FR:
 
 
 if __name__ == '__main__':
-    f = FR("../../Class-attendance-solution/train", model_save_path="trained_knn_model.clf",
+    f = FR("../../Class-attendance-solution/",
            n_neighbors=3, verbose=False)
     f.open_knnclf()
     f.start_recognition()

@@ -12,15 +12,19 @@ import os
 from face_recog.class_face import FR
 from face_recog.funs_face import register_faces
 from src.namelist import NAMELIST
+"""
+when low percentage: recognize wrong person
+"""
 
 
 class ClassAttendanceUI:
-    def __init__(self, face_detection_module, voice_detection_module, vs):
+    def __init__(self, face_detection_module, voice_detection_module, vs, pkg_path):
         # variables
         self.faceDetect = face_detection_module
         self.voiceDetect = voice_detection_module
-        self.src = '../../Class-attendance-solution/src'
-        self.trainPath = '../../Class-attendance-solution/train'
+        self.pkgPath = pkg_path
+        self.src = os.path.join(self.pkgPath, 'src')
+        self.trainPath = os.path.join(self.pkgPath, 'train')
         self.frame = None
         self.video_stream = vs
         self.faces = []
@@ -49,7 +53,7 @@ class ClassAttendanceUI:
         self.isStreaming = None
 
         # load trained mdoel
-        if os.path.isfile('../../Class-attendance-solution/face_recog/trained_knn_model.clf'):
+        if os.path.isfile(os.path.join(self.pkgPath, 'face_recog/trained_knn_model.clf')):
             self.faceDetect.open_knnclf()
             self.mode = 1  # 1-detection 0-registration 3-no trained data 2-idle mode
         else:
@@ -108,14 +112,21 @@ class ClassAttendanceUI:
                 predictitons = self.faceDetect.predict(small_frame)
                 try:
                     self.name = predictitons[0][0]  # get name from predictions
+                    image = self.faceDetect.draw(self.frame, predictitons, recover=True)
+                    image = cv2.resize(image, (0, 0), fx=0.5, fy=0.5)
                 except IndexError as e:
                     print('No face detected!')
-                    self.isStreaming = self.root.after(25, self.video_loop)
-                    return
-                image = self.faceDetect.draw(self.frame, predictitons, recover=True)
-                image = cv2.resize(image, (0, 0), fx=0.5, fy=0.5)
-                # register attendance in background ********
-                if self.name not in self.checkedFaces and self.name != 'unknown':
+                    self.name = None
+                    font = cv2.FONT_HERSHEY_DUPLEX
+                    cv2.putText(small_frame, 'No face detected!', (145, 145), font, 1.0, (255, 255, 255), 1)
+                    image = small_frame
+
+                # voice detection needed ***********
+                if self.name == 'unknown':
+                    pass
+
+                # register attendance in background
+                if self.name and self.name not in self.checkedFaces and self.name != 'unknown':
                     t = threading.Thread(target=self.logAttendance)
                     t.start()
             elif self.mode == 0:
@@ -184,6 +195,7 @@ class ClassAttendanceUI:
         messagebox.showinfo("Processing", "Training model... Please wait...")
         self.faceDetect.train()
         self.faceDetect.open_knnclf()
+        # record voice here **************
         # log attendance(after training)
         self.logAttendance()
         # back to recognition model
@@ -257,8 +269,7 @@ class ClassAttendanceUI:
 
 if __name__ == '__main__':
     # create face detection app
-    face = FR("../../Class-attendance-solution/train",
-              model_save_path="../../Class-attendance-solution/face_recog/trained_knn_model.clf",
+    face = FR("../../Class-attendance-solution/",
               n_neighbors=3, verbose=False)
     # create voice detection app
     voice = None
@@ -267,5 +278,5 @@ if __name__ == '__main__':
     videoStream = cv2.VideoCapture(0)
     time.sleep(1)
     # start main app
-    app = ClassAttendanceUI(face, voice, videoStream)
+    app = ClassAttendanceUI(face, voice, videoStream, '../../Class-attendance-solution/')
     app.on_start()
