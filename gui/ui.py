@@ -1,4 +1,5 @@
 import sys
+
 sys.path.append('../../Class-attendance-solution')
 from tkinter import *
 from tkinter import messagebox
@@ -9,9 +10,12 @@ from PIL import ImageTk
 import threading
 import time
 import os
+import pyaudio
 from face_recog.class_face import FR
 from face_recog.funs_face import register_faces
+from voice_recog.class_voice import VR
 from src.namelist import NAMELIST
+
 """
 when low percentage: recognize wrong person
 """
@@ -53,8 +57,10 @@ class ClassAttendanceUI:
         self.isStreaming = None
 
         # load trained mdoel
-        if os.path.isfile(os.path.join(self.pkgPath, 'face_recog/trained_knn_model.clf')):
-            self.faceDetect.open_model()
+        if os.path.isfile(os.path.join(self.pkgPath, 'face_recog/trained_knn_model.clf')) and os.path.isfile(
+                os.path.join(self.pkgPath, 'voice_recog/voice_knn_model.clf')):
+            self.faceDetect.open_knnclf()
+            self.voiceDetect.open_model()
             self.mode = 1  # 1-detection 0-registration 3-no trained data 2-idle mode
         else:
             # get in mode 3
@@ -272,8 +278,10 @@ if __name__ == '__main__':
     # create face detection app
     face = FR("../../Class-attendance-solution/",
               n_neighbors=3, verbose=False)
+    # instantiate the pyaudio
+    mic = pyaudio.PyAudio()
     # create voice detection app
-    voice = None
+    voice = VR(mic, '..')
     # create camera stream
     print("[INFO] warming up camera...")
     videoStream = cv2.VideoCapture(0)

@@ -12,8 +12,8 @@ Course project for pattern recognition. An attendance application for class.
 * OpenCV
 
 ##### speech_recognition
-* to be determined
-* Pyaudio
+* Pyaudio (sound recording)
+* librosa (feature extraction)
 
 ##### datasets
 * all face pics stored in 'train/' folder
@@ -25,11 +25,12 @@ train/
         0.jpg
         1.jpg
         ...
+        sound.wav
     person2/
         ...
     ...
 ```
 
 ### RUN
-* (testing) run 'class_face.py' in 'face_recog' folder.
+* run 'main.py' in root folder
 * (testing) run 'ui.py' in 'gui' folder.
