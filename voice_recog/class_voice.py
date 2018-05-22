@@ -14,6 +14,7 @@ import numpy as np
 from sklearn import neighbors
 import pickle
 from sklearn.decomposition import PCA
+from sklearn.ensemble import RandomForestClassifier
 
 
 # voice_recognition
@@ -27,17 +28,18 @@ class VR:
         self.stream = None
         self.frames = []
         self.name = None
-        # self.namelist = {}
-        # self.pca = PCA(n_components=8)
+        # self.pca = PCA(n_components=10)
+        self.rf = None
         self.knn_clf = None
 
-    def record(self, mode, seconds, name=None):
+    def record(self, mode, name=None):
         """
         record a specific length sound and store
         :param name: class name
         :param mode: 0-register 1-predict
         :return:
         """
+        seconds = 3
         # set name
         if name:
             self.name = name
@@ -61,11 +63,6 @@ class VR:
 
         # store wav file
         if mode == 0:
-            # # split voice array
-            # partition = np.floor(len(self.frames)/3)
-            # part_1 = self.frames[:partition]
-            # part_2 = self.frames[partition:partition*2]
-            # part_3 = self.frames[partition*2:]
             FILE_PATH = os.path.join(os.path.join(os.path.join(self.modulePath, 'train'), self.name), 'sound.wav')
         else:
             FILE_PATH = os.path.join(os.path.join(self.modulePath, 'voice_recog'), 'predict.wav')
@@ -88,13 +85,11 @@ class VR:
         """
         features = []
         labels = []
-        order = 0
         for className in os.listdir(os.path.join(self.modulePath, 'train')):
             # if it's not a folder, ignore
             if not os.path.isdir(os.path.join(os.path.join(self.modulePath, 'train'), className)):
                 continue
             # get the class folder & search wav file in class
-            # self.namelist[order] = className
             wavlist = wav_file_in_folder(os.path.join(os.path.join(self.modulePath, 'train'), className))
             if wavlist:
                 for wav in wavlist:
@@ -104,18 +99,13 @@ class VR:
                     print(wav)
                     feat = self.extract_features(
                         os.path.join(os.path.join(os.path.join(self.modulePath, 'train'), className), wav))
+                    # label = self.one_hot_label(order, classNum)
                     # store feat
                     features.append(feat.flatten())
                     labels.append(className)
-            order += 1
         # perform pca
         # features = self.pca.fit_transform(features)
         # print(features.shape)
-        # create labels
-        # classNum = len(self.namelist)
-        # for key in self.namelist:
-        #     labels.append(self.one_hot_label(key, classNum))
-
         print('labels: ', labels)
 
         # check features & labels
@@ -124,22 +114,20 @@ class VR:
         print('feature shape: ', features.shape)
         print('label shape: ', labels.shape)
 
-        # save name list for later use
-        # print(self.namelist)
-        # np.save('namelist.npy', self.namelist)
-
         # train model
-        self.knn_clf = neighbors.KNeighborsClassifier(n_neighbors=3, algorithm='ball_tree', weights='distance')
-        self.knn_clf.fit(features, labels)
+        # self.knn_clf = neighbors.KNeighborsClassifier(n_neighbors=3, algorithm='ball_tree', weights='distance')
+        # self.knn_clf.fit(features, labels)
+        self.rf = RandomForestClassifier(n_estimators=1000, random_state=53)
+        self.rf.fit(features, labels)
 
         # save model
-        with open(os.path.join(os.path.join(self.modulePath, 'voice_recog'), 'voice_knn_model.clf'), 'wb') as f:
-            pickle.dump(self.knn_clf, f)
+        with open(os.path.join(os.path.join(self.modulePath, 'voice_recog'), 'voice_knn_model.clf'), 'wb') as f2:
+            pickle.dump(self.rf, f2)
 
     def predict(self):
         # check model
-        if not self.knn_clf:
-            result = self.open_knnclf()
+        if not self.rf:
+            result = self.open_model()
             # can not open model
             if not result:
                 return
@@ -149,8 +137,10 @@ class VR:
         except FileNotFoundError as e:
             print('Can not find recorded file! Please record a wav for prediction.')
             return
-        closest_distances = self.knn_clf.predict(feat.flatten().reshape(1, -1))
+        closest_distances = self.rf.predict(feat.flatten().reshape(1, -1))  # .reshape(1, -1)
+        prob = self.rf.predict_proba(feat.flatten().reshape(1, -1))
         print(closest_distances)
+        print(prob)
 
     @staticmethod
     def extract_features(wav):
@@ -174,11 +164,11 @@ class VR:
         """
         return np.eye(num_classes)[order]
 
-    def open_knnclf(self):
-        self.knn_clf = None
+    def open_model(self):
+        self.rf = None
         if os.path.isfile(os.path.join(os.path.join(self.modulePath, 'voice_recog'), 'voice_knn_model.clf')):
             with open(os.path.join(os.path.join(self.modulePath, 'voice_recog'), 'voice_knn_model.clf'), 'rb') as f:
-                self.knn_clf = pickle.load(f)
+                self.rf = pickle.load(f)
             return True
         else:
             print('no voice trained model found!')
@@ -194,9 +184,9 @@ if __name__ == '__main__':
     # create instance
     voice = VR(mic, '..')
 
-    # voice.record(0, 9, 'Andro')  # record for registering Shan
+    # voice.record(0, 'Shan')  # record for registering Shan
     # voice.train()  # create model
 
-    voice.record(1, 3)  # record for prediction
+    voice.record(1)  # record for prediction
     voice.predict()
     voice.on_close()

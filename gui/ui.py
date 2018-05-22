@@ -54,7 +54,7 @@ class ClassAttendanceUI:
 
         # load trained mdoel
         if os.path.isfile(os.path.join(self.pkgPath, 'face_recog/trained_knn_model.clf')):
-            self.faceDetect.open_knnclf()
+            self.faceDetect.open_model()
             self.mode = 1  # 1-detection 0-registration 3-no trained data 2-idle mode
         else:
             # get in mode 3
@@ -195,7 +195,7 @@ class ClassAttendanceUI:
         # update train model
         messagebox.showinfo("Processing", "Training model... Please wait...")
         self.faceDetect.train()
-        self.faceDetect.open_knnclf()
+        self.faceDetect.open_model()
         # record voice here **************
         # log attendance(after training)
         self.logAttendance()
