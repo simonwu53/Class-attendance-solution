@@ -138,6 +138,7 @@ class ClassAttendanceUI:
                     self.mode = 2  # turn to idle mode
                     t = threading.Thread(target=self.trainModel)
                     t.start()
+                    # register voice here *******************
                 image = small_frame
                 self.count += 1
             else:
