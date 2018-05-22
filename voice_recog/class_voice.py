@@ -22,7 +22,6 @@ class VR:
     def __init__(self, audio, module_path, verbose=False):
         self.modulePath = module_path
         self.verbose = verbose
-        self.filename_suffix = '.wav'
         # variables
         self.audio = audio
         self.stream = None
@@ -103,10 +102,7 @@ class VR:
                     # store feat
                     features.append(feat.flatten())
                     labels.append(className)
-        # perform pca
-        # features = self.pca.fit_transform(features)
-        # print(features.shape)
-        print('labels: ', labels)
+                    print(feat.shape)
 
         # check features & labels
         features = np.array(features)
@@ -117,7 +113,7 @@ class VR:
         # train model
         # self.knn_clf = neighbors.KNeighborsClassifier(n_neighbors=3, algorithm='ball_tree', weights='distance')
         # self.knn_clf.fit(features, labels)
-        self.rf = RandomForestClassifier(n_estimators=1000, random_state=53)
+        self.rf = RandomForestClassifier(n_estimators=1500, random_state=53)
         self.rf.fit(features, labels)
 
         # save model
@@ -134,6 +130,9 @@ class VR:
         # start predict*****
         try:
             feat = self.extract_features(os.path.join(os.path.join(self.modulePath, 'voice_recog'), 'predict.wav'))
+            if feat.shape != (38, 3):
+                print('recognize failed! feature length is not correct!')
+                return
         except FileNotFoundError as e:
             print('Can not find recorded file! Please record a wav for prediction.')
             return
@@ -147,22 +146,49 @@ class VR:
         """
         function to extract wav features
         :param wav: path to wav file
-        :return: mfcc features
+        :return: beat-synchronous features
         """
-        y, sr = librosa.load(wav, mono=True)
-        mfcc = librosa.feature.mfcc(y=y, sr=sr)
-        mfcc_delta = librosa.feature.delta(mfcc)
-        return np.concatenate((mfcc, mfcc_delta), axis=1)
+        # y, sr = librosa.load(wav, mono=True)
+        # mfcc = librosa.feature.mfcc(y=y, sr=sr)
+        # mfcc_delta = librosa.feature.delta(mfcc)
+        # return np.concatenate((mfcc, mfcc_delta), axis=1)
 
-    @staticmethod
-    def one_hot_label(order, num_classes=10):
-        """
-        crate one-hot label
-        :param order: the class order
-        :param num_classes: number of classes
-        :return: one-hot label
-        """
-        return np.eye(num_classes)[order]
+        # Load the example clip
+        y, sr = librosa.load(wav)
+
+        # Set the hop length; at 22050 Hz, 512 samples ~= 23ms
+        hop_length = 512
+
+        # Separate harmonics and percussives into two waveforms
+        y_harmonic, y_percussive = librosa.effects.hpss(y)
+
+        # Beat track on the percussive signal
+        tempo, beat_frames = librosa.beat.beat_track(y=y_percussive, sr=sr)
+
+        # Compute MFCC features from the raw signal
+        mfcc = librosa.feature.mfcc(y=y, sr=sr, hop_length=hop_length, n_mfcc=13)
+
+        # And the first-order differences (delta features)
+        mfcc_delta = librosa.feature.delta(mfcc)
+
+        # Stack and synchronize between beat events
+        # This time, we'll use the mean value (default) instead of median
+        beat_mfcc_delta = librosa.util.sync(np.vstack([mfcc, mfcc_delta]),
+                                            beat_frames)
+
+        # Compute chroma features from the harmonic signal
+        chromagram = librosa.feature.chroma_cqt(y=y_harmonic,
+                                                sr=sr)
+
+        # Aggregate chroma features between beat events
+        # We'll use the median value of each feature between beat frames
+        beat_chroma = librosa.util.sync(chromagram,
+                                        beat_frames,
+                                        aggregate=np.median)
+
+        # Finally, stack all beat-synchronous features together
+        beat_features = np.vstack([beat_chroma, beat_mfcc_delta])
+        return beat_features
 
     def open_model(self):
         self.rf = None
