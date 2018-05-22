@@ -6,6 +6,7 @@ import os
 import pyaudio
 import numpy as np
 import librosa
+import wave
 
 # static variables
 FORMAT = pyaudio.paInt16
@@ -80,6 +81,37 @@ def extract_features(wav):
     return beat_features
 
 
+def play_sound(audio, path):  # use audio object from an instance
+    # length of data to read.
+    chunk = 1024
+    # open the file for reading.
+    wf = wave.open(path, 'rb')
+
+    # create an audio object
+    # p = pyaudio.PyAudio()
+
+    # open stream based on the wave object which has been input.
+    stream = audio.open(format=
+                        audio.get_format_from_width(wf.getsampwidth()),
+                        channels=wf.getnchannels(),
+                        rate=wf.getframerate(),
+                        output=True)
+
+    # read data (based on the chunk size)
+    data = wf.readframes(chunk)
+
+    # play stream (looping from beginning of file to the end)
+    while len(data) > 0:
+        # writing to the stream is what *actually* plays the sound.
+        stream.write(data)
+        data = wf.readframes(chunk)
+
+    # cleanup stuff.
+    stream.stop_stream()
+    stream.close()
+
+
 if __name__ == '__main__':
     wav_file_in_folder('/Users/simonwu/PycharmProjects/PR/Class-attendance-solution/voice_recog')
     wav_file_in_folder('/Users/simonwu/PycharmProjects/PR/Class-attendance-solution/train/Stella')
+    # play_sound()

@@ -17,7 +17,7 @@ from voice_recog.class_voice import VR
 from src.namelist import NAMELIST
 
 """
-when low percentage: recognize wrong person
+Line 139, voice recognition involved
 """
 
 
@@ -51,6 +51,8 @@ class ClassAttendanceUI:
         self.name = None
 
         self.check_panel = None
+        self.submit_button = None
+        self.voice_button = None
         self.tree = None
 
         # threading loop
@@ -102,8 +104,10 @@ class ClassAttendanceUI:
         self.name_entry = Entry(self.name_panel)
         self.name_entry.grid(row=1, column=0, sticky=NSEW, padx=230)
         self.name_entry.focus()
-        submit_button = Button(self.name_panel, text='Submit', command=self.regist_name)
-        submit_button.grid(row=2, column=0, sticky=NSEW, padx=230)
+        self.voice_button = Button(self.name_panel, text='Register Voice', command=self.regist_voice)
+        self.voice_button.grid(row=2, column=0, sticky=NSEW, padx=230)
+        self.submit_button = Button(self.name_panel, text='Submit', command=self.regist_name, state=DISABLED)
+        self.submit_button.grid(row=3, column=0, sticky=NSEW, padx=230)
         return
 
     def video_loop(self):
@@ -142,9 +146,9 @@ class ClassAttendanceUI:
                 # if len of faces get enough, train model
                 if len(self.faces) == 12:
                     self.mode = 2  # turn to idle mode
+                    # train face & voice model
                     t = threading.Thread(target=self.trainModel)
                     t.start()
-                    # register voice here *******************
                 image = small_frame
                 self.count += 1
             else:
@@ -167,7 +171,7 @@ class ClassAttendanceUI:
         self.isStreaming = self.root.after(25, self.video_loop)
         return
 
-    def regist_name(self):
+    def check_name(self):
         self.name = self.name_entry.get()
         # check if name is duplicated
         if self.name in NAMELIST:
@@ -177,12 +181,13 @@ class ClassAttendanceUI:
             self.name_entry.delete(0, 'end')
             self.name_entry.focus()
             self.name = None
-            return
+            return False
         else:
-            # make dir for training
-            p = os.path.join(self.trainPath, self.name)
-            if not os.path.exists(p):
-                os.makedirs(p)
+            return True
+
+    def regist_name(self):
+        result = self.check_name()
+        if result:
             # add name to NAMELIST
             NAMELIST.append(self.name)
             # close window
@@ -194,6 +199,21 @@ class ClassAttendanceUI:
             self.mode = 0
             return
 
+    def regist_voice(self):
+        result = self.check_name()
+        if not result:
+            return
+
+        self.voice_button['state'] = 'disabled'
+        # make dir for training
+        p = os.path.join(self.trainPath, self.name)
+        if not os.path.exists(p):
+            os.makedirs(p)
+        messagebox.showinfo("Prepare",
+                            "Now you can start register your voice, please say 'My name is:.....' after a signal")
+        self.voiceDetect.record(0, name=self.name)
+        self.submit_button['state'] = 'normal'
+
     def trainModel(self):
         # store images
         status = register_faces(self.faces, self.name, save_path=self.trainPath)
@@ -201,8 +221,9 @@ class ClassAttendanceUI:
         # update train model
         messagebox.showinfo("Processing", "Training model... Please wait...")
         self.faceDetect.train()
-        self.faceDetect.open_model()
-        # record voice here **************
+        self.faceDetect.open_knnclf()
+        self.voiceDetect.train()
+        self.voiceDetect.open_model()
         # log attendance(after training)
         self.logAttendance()
         # back to recognition model

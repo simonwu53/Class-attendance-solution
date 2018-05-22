@@ -10,7 +10,8 @@ Downloading
 New
 Pouring
 Updated
-*.wav
+train/*.wav
+voice_recog/predict.wav
 
 
 # Byte-compiled / optimized / DLL files

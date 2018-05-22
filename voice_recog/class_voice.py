@@ -4,8 +4,9 @@
 # import
 import sys
 sys.path.append('..')
-from voice_recog.funcs_voice import wav_file_in_folder, extract_features, FORMAT, CHANNELS, RATE, CHUNK
+from voice_recog.funcs_voice import wav_file_in_folder, extract_features, play_sound, FORMAT, CHANNELS, RATE, CHUNK
 import os
+import time
 import pyaudio
 import wave
 import numpy as np
@@ -31,21 +32,22 @@ class VR:
         record a specific length sound and store
         :param name: class name
         :param mode: 0-register 1-predict
-        :return:
+        :return: save wav file in train folder
         """
         seconds = 3
         # set name
         if name:
             self.name = name
 
-        # open mic
+        # notify starting
+        play_sound(self.audio, os.path.join(self.modulePath, 'voice_recog/start.wav'))
+
+        # open mic & record specific seconds
         self.stream = self.audio.open(format=FORMAT, channels=CHANNELS,
                                       rate=RATE,
                                       input=True,
                                       frames_per_buffer=CHUNK)
-
-        # record specific seconds
-        print('Start speak.')
+        print('Start speaking.')
         for i in range(0, int(RATE / CHUNK * seconds)):
             data = self.stream.read(CHUNK)
             self.frames.append(data)
@@ -79,6 +81,7 @@ class VR:
         """
         features = []
         labels = []
+        print('Training voice dataset...')
         for className in os.listdir(os.path.join(self.modulePath, 'train')):
             # if it's not a folder, ignore
             if not os.path.isdir(os.path.join(os.path.join(self.modulePath, 'train'), className)):
@@ -88,16 +91,11 @@ class VR:
             if wavlist:
                 for wav in wavlist:
                     # get feature of the wav
-                    print('className & file: ')
-                    print(className)
-                    print(wav)
                     feat = extract_features(
                         os.path.join(os.path.join(os.path.join(self.modulePath, 'train'), className), wav))
-                    # label = self.one_hot_label(order, classNum)
                     # store feat
                     features.append(feat.flatten())
                     labels.append(className)
-                    print(feat.shape)
 
         # check features & labels
         features = np.array(features)
@@ -114,6 +112,7 @@ class VR:
         # save model
         with open(os.path.join(os.path.join(self.modulePath, 'voice_recog'), 'voice_knn_model.clf'), 'wb') as f2:
             pickle.dump(self.rf, f2)
+            print('Training complete.')
 
     def predict(self):
         # check model
@@ -157,8 +156,8 @@ if __name__ == '__main__':
     voice = VR(mic, '..')
 
     # voice.record(0, 'Shan')  # record for registering Shan
-    # voice.train()  # create model
+    voice.train()  # create model
 
-    voice.record(1)  # record for prediction
-    voice.predict()
+    # voice.record(1)  # record for prediction
+    # voice.predict()
     voice.on_close()
