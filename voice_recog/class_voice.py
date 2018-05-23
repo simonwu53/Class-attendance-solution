@@ -6,7 +6,6 @@ import sys
 sys.path.append('..')
 from voice_recog.funcs_voice import wav_file_in_folder, extract_features, play_sound, FORMAT, CHANNELS, RATE, CHUNK
 import os
-import time
 import pyaudio
 import wave
 import numpy as np
@@ -24,8 +23,8 @@ class VR:
         self.stream = None
         self.frames = []
         self.name = None
-        # self.pca = PCA(n_components=10)
         self.rf = None
+        self.labels = None
 
     def record(self, mode, name=None):
         """
@@ -40,7 +39,7 @@ class VR:
             self.name = name
 
         # notify starting
-        play_sound(self.audio, os.path.join(self.modulePath, 'voice_recog/start.wav'))
+        # play_sound(self.audio, os.path.join(self.modulePath, 'voice_recog/start.wav'))
 
         # open mic & record specific seconds
         self.stream = self.audio.open(format=FORMAT, channels=CHANNELS,
@@ -80,7 +79,7 @@ class VR:
         :return: None, store trained model in folder.
         """
         features = []
-        labels = []
+        self.labels = []
         print('Training voice dataset...')
         for className in os.listdir(os.path.join(self.modulePath, 'train')):
             # if it's not a folder, ignore
@@ -94,34 +93,37 @@ class VR:
                     feat = extract_features(
                         os.path.join(os.path.join(os.path.join(self.modulePath, 'train'), className), wav))
                     # store feat
+                    if feat.shape != (38, 3):
+                        print("%s 's voice didn't trained, please record again." % className)
+                        continue
                     features.append(feat.flatten())
-                    labels.append(className)
+                    self.labels.append(className)
 
         # check features & labels
         features = np.array(features)
-        labels = np.array(labels)
+        self.labels = np.array(self.labels)
         print('feature shape: ', features.shape)
-        print('label shape: ', labels.shape)
+        print('label shape: ', self.labels.shape)
 
         # train model
         # self.knn_clf = neighbors.KNeighborsClassifier(n_neighbors=3, algorithm='ball_tree', weights='distance')
         # self.knn_clf.fit(features, labels)
         self.rf = RandomForestClassifier(n_estimators=1500, random_state=53)
-        self.rf.fit(features, labels)
+        self.rf.fit(features, self.labels)
 
         # save model
         with open(os.path.join(os.path.join(self.modulePath, 'voice_recog'), 'voice_knn_model.clf'), 'wb') as f2:
             pickle.dump(self.rf, f2)
             print('Training complete.')
 
-    def predict(self):
+    def predict(self, threshold=0.37):
         # check model
         if not self.rf:
             result = self.open_model()
             # can not open model
             if not result:
                 return
-        # start predict*****
+        # start predict
         try:
             feat = extract_features(os.path.join(os.path.join(self.modulePath, 'voice_recog'), 'predict.wav'))
             if feat.shape != (38, 3):
@@ -130,10 +132,13 @@ class VR:
         except FileNotFoundError as e:
             print('Can not find recorded file! Please record a wav for prediction.')
             return
-        closest_distances = self.rf.predict(feat.flatten().reshape(1, -1))  # .reshape(1, -1)
+        pred = self.rf.predict(feat.flatten().reshape(1, -1))  # .reshape(1, -1)
         prob = self.rf.predict_proba(feat.flatten().reshape(1, -1))
-        print(closest_distances)
-        print(prob)
+        prob = max(prob) > threshold
+        if prob:
+            return pred
+        else:
+            return False
 
     def open_model(self):
         self.rf = None
@@ -156,8 +161,8 @@ if __name__ == '__main__':
     voice = VR(mic, '..')
 
     # voice.record(0, 'Shan')  # record for registering Shan
-    voice.train()  # create model
+    # voice.train()  # create model
 
-    # voice.record(1)  # record for prediction
-    # voice.predict()
+    voice.record(1)  # record for prediction
+    print(voice.predict())
     voice.on_close()

@@ -16,10 +16,6 @@ from face_recog.funs_face import register_faces
 from voice_recog.class_voice import VR
 from src.namelist import NAMELIST
 
-"""
-Line 139, voice recognition involved
-"""
-
 
 class ClassAttendanceUI:
     def __init__(self, face_detection_module, voice_detection_module, vs, pkg_path):
@@ -35,6 +31,7 @@ class ClassAttendanceUI:
         self.count = 0
         self.checkedFaces = {}
         self.records = []
+        self.font = cv2.FONT_HERSHEY_DUPLEX
 
         # ui
         self.root = Tk()
@@ -54,6 +51,9 @@ class ClassAttendanceUI:
         self.submit_button = None
         self.voice_button = None
         self.tree = None
+
+        self.msgWin = None
+        self.msgWinOpened = False
 
         # threading loop
         self.isStreaming = None
@@ -108,6 +108,11 @@ class ClassAttendanceUI:
         self.voice_button.grid(row=2, column=0, sticky=NSEW, padx=230)
         self.submit_button = Button(self.name_panel, text='Submit', command=self.regist_name, state=DISABLED)
         self.submit_button.grid(row=3, column=0, sticky=NSEW, padx=230)
+        # reset msgWin
+        if self.msgWinOpened:
+            self.msgWin.destroy()
+            self.msgWin = None
+            self.msgWinOpened = False
         return
 
     def video_loop(self):
@@ -127,13 +132,13 @@ class ClassAttendanceUI:
                 except IndexError as e:
                     print('No face detected!')
                     self.name = None
-                    font = cv2.FONT_HERSHEY_DUPLEX
-                    cv2.putText(small_frame, 'No face detected!', (145, 145), font, 1.0, (255, 255, 255), 1)
+                    cv2.putText(small_frame, 'No face detected!', (145, 145), self.font, 1.0, (255, 255, 255), 1)
                     image = small_frame
 
-                # voice detection needed ***********
-                if self.name == 'unknown':
-                    pass
+                # voice detection needed
+                if self.name == 'unknown' and not self.msgWinOpened:
+                    t = threading.Thread(target=self.messageWindow)
+                    t.start()
 
                 # register attendance in background
                 if self.name and self.name not in self.checkedFaces and self.name != 'unknown':
@@ -211,7 +216,8 @@ class ClassAttendanceUI:
             os.makedirs(p)
         messagebox.showinfo("Prepare",
                             "Now you can start register your voice, please say 'My name is:.....' after a signal")
-        self.voiceDetect.record(0, name=self.name)
+        t = threading.Thread(target=self.voiceDetect.record, args=(0, self.name))
+        t.start()
         self.submit_button['state'] = 'normal'
 
     def trainModel(self):
@@ -227,6 +233,7 @@ class ClassAttendanceUI:
         # log attendance(after training)
         self.logAttendance()
         # back to recognition model
+        messagebox.showinfo("Complete", "Now you can start recognition again!")
         self.mode = 1
         return
 
@@ -280,6 +287,7 @@ class ClassAttendanceUI:
         # record for display
         self.checkedFaces[self.name] = time.strftime("%d-%m-%Y,%H:%M:%S")
         # reset variable
+        messagebox.showinfo("Checked in", "your name: %s is checked in!" % self.name)
         self.name = None
         return
 
@@ -293,6 +301,30 @@ class ClassAttendanceUI:
             s += "]"
             f.write(s)
         return
+
+    def recog_voice(self):
+        self.mode = 2
+        messagebox.showinfo("Prepare", "please say 'My name is:.....' after a signal")
+        self.voiceDetect.record(1)
+        result = voice.predict()
+        if result:
+            self.name = result
+            self.logAttendance()
+        # reset msgWin
+        if self.msgWinOpened:
+            self.msgWin.destroy()
+            self.msgWin = None
+            self.msgWinOpened = False
+        self.mode = 1
+
+    def messageWindow(self):
+        self.msgWinOpened = True
+        self.msgWin = Toplevel(self.root)
+        self.msgWin.title("Can't recognize you")
+        message = "Do u want to register your face & voice or use voice recognition?"
+        Label(self.msgWin, text=message).pack()
+        Button(self.msgWin, text='Register', command=self.start_registration).pack()
+        Button(self.msgWin, text='Voice', command=self.recog_voice).pack()
 
 
 if __name__ == '__main__':

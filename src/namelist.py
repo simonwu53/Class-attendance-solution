@@ -1,1 +1,1 @@
-NAMELIST = ['Kadir', 'Andro', 'Shan']
+NAMELIST = ['Kadir', 'Andro']
