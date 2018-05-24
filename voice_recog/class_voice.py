@@ -93,9 +93,9 @@ class VR:
                     feat = extract_features(
                         os.path.join(os.path.join(os.path.join(self.modulePath, 'train'), className), wav))
                     # store feat
-                    if feat.shape != (38, 3):
-                        print("%s 's voice didn't trained, please record again." % className)
-                        continue
+                    # if feat.shape != (38, 3):
+                    #     print("%s 's voice didn't trained, please record again." % className)
+                    #     continue
                     features.append(feat.flatten())
                     self.labels.append(className)
 
@@ -116,7 +116,7 @@ class VR:
             pickle.dump(self.rf, f2)
             print('Training complete.')
 
-    def predict(self, threshold=0.37):
+    def predict(self):
         # check model
         if not self.rf:
             result = self.open_model()
@@ -126,15 +126,17 @@ class VR:
         # start predict
         try:
             feat = extract_features(os.path.join(os.path.join(self.modulePath, 'voice_recog'), 'predict.wav'))
-            if feat.shape != (38, 3):
-                print('recognize failed! feature length is not correct!')
-                return
+            # if feat.shape != (38, 3):
+            #     print('recognize failed! feature length is not correct!')
+            #     return False
         except FileNotFoundError as e:
             print('Can not find recorded file! Please record a wav for prediction.')
-            return
+            return False
         pred = self.rf.predict(feat.flatten().reshape(1, -1))  # .reshape(1, -1)
         prob = self.rf.predict_proba(feat.flatten().reshape(1, -1))
-        prob = max(prob) > threshold
+        print(prob)
+        threshold = 1 / len(prob[0])
+        prob = max(prob[0]) > threshold
         if prob:
             return pred
         else:
@@ -160,9 +162,9 @@ if __name__ == '__main__':
     # create instance
     voice = VR(mic, '..')
 
-    # voice.record(0, 'Shan')  # record for registering Shan
-    # voice.train()  # create model
+    # voice.record(0, 'Ayane')  # record for registering Shan
+    voice.train()  # create model
 
-    voice.record(1)  # record for prediction
-    print(voice.predict())
+    # voice.record(1)  # record for prediction
+    # print(voice.predict())
     voice.on_close()

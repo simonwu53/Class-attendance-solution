@@ -18,9 +18,11 @@ for file in os.listdir('./src'):
 
 # reset namelist.py  *********
 with open('./src/namelist.py', 'w') as f:
-    f.write("NAMELIST = ['Kadir', 'Andro']\n")
+    f.write("NAMELIST = []\n")
 
 # remove training classes  *********
 for file in os.listdir('./train'):
-    if file == 'Shan':
+    if not file == '.DS_Store':
         shutil.rmtree(os.path.join('./train', file))
+    # if file == 'Shan':
+    #     shutil.rmtree(os.path.join('./train', file))

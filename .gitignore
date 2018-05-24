@@ -121,3 +121,5 @@ ENV/
 face_recog/trained_knn_model\.clf
 
 *.txt
+
+voice_recog/voice_knn_model\.clf

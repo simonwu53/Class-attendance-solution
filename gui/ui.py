@@ -304,9 +304,9 @@ class ClassAttendanceUI:
 
     def recog_voice(self):
         self.mode = 2
-        messagebox.showinfo("Prepare", "please say 'My name is:.....' after a signal")
+        messagebox.showinfo("Prepare", "please say your name ..... after a signal")
         self.voiceDetect.record(1)
-        result = voice.predict()
+        result = self.voiceDetect.predict()
         if result:
             self.name = result
             self.logAttendance()
