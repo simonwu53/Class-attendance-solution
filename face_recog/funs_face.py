@@ -84,7 +84,6 @@ def predict(X_img, knn_clf=None, model_path=None, distance_threshold=0.4):
     """
     Recognizes faces in given image using a trained KNN classifier
 
-    ~~:param X_img_path: path to image to be recognized~~
     :param X_img: frame from webcam
     :param knn_clf: (optional) a knn classifier object. if not specified, model_save_path must be specified.
     :param model_path: (optional) path to a pickled knn classifier. if not specified, model_save_path must be knn_clf.

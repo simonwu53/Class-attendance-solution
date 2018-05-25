@@ -1,3 +1,6 @@
+"""
+clean application directory to initial state
+"""
 import os
 import shutil
 

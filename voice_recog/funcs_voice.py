@@ -1,5 +1,6 @@
 """
-21.05.2018 version 1
+25.05.2018 version 2
+abandon function play_sound
 """
 # import
 import os

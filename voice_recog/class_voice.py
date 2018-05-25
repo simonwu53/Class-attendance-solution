@@ -1,5 +1,6 @@
 """
-22.05.2018 version 2
+25.05.2018 version 3
+add widget to notify user to start/stop speaking
 """
 # import
 import sys
@@ -26,9 +27,10 @@ class VR:
         self.rf = None
         self.labels = None
 
-    def record(self, mode, name=None):
+    def record(self, mode, name=None, widget=None):
         """
         record a specific length sound and store
+        :param widget: widget from ui for notifying user to speak
         :param name: class name
         :param mode: 0-register 1-predict
         :return: save wav file in train folder
@@ -39,7 +41,8 @@ class VR:
             self.name = name
 
         # notify starting
-        # play_sound(self.audio, os.path.join(self.modulePath, 'voice_recog/start.wav'))
+        if widget:
+            widget.set('Start speaking...')
 
         # open mic & record specific seconds
         self.stream = self.audio.open(format=FORMAT, channels=CHANNELS,
@@ -55,6 +58,8 @@ class VR:
         print('Stop speaking.')
         self.stream.stop_stream()
         self.stream.close()
+        if widget:
+            widget.set('Stop speaking...')
 
         # store wav file
         if mode == 0:

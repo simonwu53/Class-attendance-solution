@@ -1,3 +1,6 @@
+"""
+main logic UI part of the application
+"""
 import sys
 
 sys.path.append('../../Class-attendance-solution')
@@ -51,6 +54,8 @@ class ClassAttendanceUI:
         self.submit_button = None
         self.voice_button = None
         self.tree = None
+        self.notifyString = StringVar()
+        self.notifyString.set('')
 
         self.msgWin = None
         self.msgWinOpened = False
@@ -108,6 +113,8 @@ class ClassAttendanceUI:
         self.voice_button.grid(row=2, column=0, sticky=NSEW, padx=230)
         self.submit_button = Button(self.name_panel, text='Submit', command=self.regist_name, state=DISABLED)
         self.submit_button.grid(row=3, column=0, sticky=NSEW, padx=230)
+        label = Label(self.name_panel, textvariable=self.notifyString)
+        label.grid(row=4, column=0, sticky=NSEW, padx=230)
         # reset msgWin
         if self.msgWinOpened:
             self.msgWin.destroy()
@@ -193,6 +200,7 @@ class ClassAttendanceUI:
     def regist_name(self):
         result = self.check_name()
         if result:
+            self.notifyString.set('')
             # add name to NAMELIST
             NAMELIST.append(self.name)
             # close window
@@ -216,7 +224,7 @@ class ClassAttendanceUI:
             os.makedirs(p)
         messagebox.showinfo("Prepare",
                             "Now you can start register your voice, please say 'My name is:.....' after a signal")
-        t = threading.Thread(target=self.voiceDetect.record, args=(0, self.name))
+        t = threading.Thread(target=self.voiceDetect.record, args=(0, self.name, self.notifyString))
         t.start()
         self.submit_button['state'] = 'normal'
 
@@ -305,7 +313,7 @@ class ClassAttendanceUI:
     def recog_voice(self):
         self.mode = 2
         messagebox.showinfo("Prepare", "please say your name ..... after a signal")
-        self.voiceDetect.record(1)
+        self.voiceDetect.record(1, widget=self. notifyString)
         result = self.voiceDetect.predict()
         if result:
             self.name = result
@@ -315,6 +323,7 @@ class ClassAttendanceUI:
             self.msgWin.destroy()
             self.msgWin = None
             self.msgWinOpened = False
+            self.notifyString.set('')
         self.mode = 1
 
     def messageWindow(self):
@@ -325,6 +334,7 @@ class ClassAttendanceUI:
         Label(self.msgWin, text=message).pack()
         Button(self.msgWin, text='Register', command=self.start_registration).pack()
         Button(self.msgWin, text='Voice', command=self.recog_voice).pack()
+        Label(self.msgWin, textvariable=self.notifyString).pack()
 
 
 if __name__ == '__main__':

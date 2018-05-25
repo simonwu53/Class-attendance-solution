@@ -1,5 +1,23 @@
 """
-21.05.2018 version 3
+25.05.2018 version 4
+Read README.md before running
+Execute to start application
+----------------------------------------------------------------------------
+Team member: Shan, Kadir, Andro, Toomas
+
+Github link: https://github.com/simonwu53/Class-attendance-solution
+----------------------------------------------------------------------------
+Dependencies:
+    + dlib (face_recognition dependency)
+    + face_recognition
+    + OpenCV
+    + sklearn
+    + PIL
+    + pyaudio
+    + librosa
+    + wave
+    + numpy
+    + tkinter
 """
 # import
 import time
